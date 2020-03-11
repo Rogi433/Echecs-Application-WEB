@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<meta charset="utf-8">
+
+<title>Echecs</title>
+
+
+
+<body>
+<h1>Jeu d'échecs</h1>
+<div id="contenu">
+<table id="echiquier"/>
+ </div>
+</body>
+
+
+<script>
+
+
+var ligne1=[-5,-4,-3,-2,-1,-3,-4,-5];
+var ligne2=[-6,-6,-6,-6,-6,-6,-6,-6];
+
+var initial=[ligne1,ligne2];
+for (var k=0;k<4;k++){
+	let ligne=[0,0,0,0,0,0,0,0];
+	initial.push(ligne);
+}
+
+var newligne1 =[];
+var newligne2=[];
+for (var k=0;k<8;k++){
+	newligne1.push(-ligne1[k]);
+	newligne2.push(-ligne2[k]);
+}
+initial.push(newligne1);
+initial.push(newligne2);
+
+
+
+for (let k=0;k<8;k++)
+{
+	let ligne=document.createElement("tr");
+	
+	for (let l=0;l<8;l++){
+	
+		let cell=document.createElement("td");
+		if ((k+l)%2==0) cell.style.backgroundColor="rgb(255,200,160)";
+		else cell.style.backgroundColor="white";
+		
+		cell.style.width="40px";
+		cell.style.height="40px";
+		
+		piece=initial[k][l];
+		if (piece!=0){
+			image='url("images/'+piece+'.png")';
+			console.log(image);
+			cell.style.backgroundImage=image;
+			cell.style.backgroundSize="cover";
+		}
+		
+		
+		ligne.appendChild(cell);
+	}
+	ligne.style.margin="0";
+	echiquier.appendChild(ligne);
+	echiquier.style.border="solid black";
+	echiquier.style.padding="0";
+
+
+}
+
+function update(){
+	
+
+}
+
+
+
+
+
+
+</script>
