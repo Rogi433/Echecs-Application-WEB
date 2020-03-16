@@ -22,6 +22,16 @@ td:hover {
 
 div{
 	align-content:center;
+	padding-left:20px;
+}
+
+img{
+	padding-left : 5px;
+}
+
+#echiquier{
+	border : solid black;
+	padding : 0;
 }
 
 
@@ -34,7 +44,7 @@ div{
 <p>Tour du joueur <span id="couleur">blanc</span></p>
 <table id="echiquier" style="float:left"></table>
   
- <div id="promotion" style="float:left"></div></div>
+ <div id="promotion" style="float:left">Promotion :<br/><hr/></div></div>
  
  
  <div id="infoEchec"></div>
@@ -42,42 +52,49 @@ div{
 <div style="clear: both;"></div>
 </body>
 
-
+<script src="/socket.io/socket.io.js"></script>
+  
 <script>
-var ligne1=[-5,-4,-3,-2,-1,-3,-4,-5];
-var ligne2=[-6,-6,-6,-6,-6,-6,-6,-6];
 
-var board=[ligne1,ligne2];
-for (var k=0;k<4;k++){
-	let ligne=[0,0,0,0,0,0,0,0];
-	board.push(ligne);
-}
+var board=[];
 
-var newligne1 =[];
-var newligne2=[];
-for (var k=0;k<8;k++){
-	newligne1.push(-ligne1[k]);
-	newligne2.push(-ligne2[k]);
-}
-board.push(newligne2);
-board.push(newligne1);
+var socket = io();
 
 
-const K=1; //pour rendre plus clair l'utilisation des codes avec par exemple K ou -K au lieu de 1 ou -1 pour un roi
-const Q=2;
-const B=3;
-const N=4;
-const R=5;
-const P=6;
+socket.on('disconnect',function(){
+	contenu.textContent="Vous etes déconnecté";
+});
+
+socket.on('init',function(couleur,data){
+	joueur=couleur;
+	if (couleur==1){
+		your_turn=true;
+	}
+	
+	if(joueur==1){
+		board=JSON.parse(data);
+	}
+	else{
+		board=convert(JSON.parse(data));
+	}
+	update();
+});
+
+socket.on('update',function(data){
+	if(joueur==1){
+		board=JSON.parse(data);
+	}
+	else{
+		board=convert(JSON.parse(data));
+	}
+	update();
+	your_turn=true;
+});
 
 
-
-var current=undefined;
-
+//construction de la table correspondant a l'echiquier
 var table=[];
 
-echiquier.style.border="solid black";
-echiquier.style.padding="0";
 for (let k=0;k<8;k++)
 {
 
@@ -94,12 +111,6 @@ for (let k=0;k<8;k++)
 		cell.style.width="40px";
 		cell.style.height="40px";
 		
-		<!-- piece=initial[k][l]; -->
-		<!-- if (piece!=0){ -->
-			<!-- image='url("images/'+piece+'.png")'; -->
-			<!-- cell.style.backgroundImage=image; -->
-			<!-- //cell.style.backgroundSize="cover"; -->
-		<!-- } -->
 		
 		cell.addEventListener('click',function(){selectCell(k,l)});
 		
@@ -114,8 +125,9 @@ for (let k=0;k<8;k++)
 }
 
 
+var current=undefined; //pour la selection de case cliquée
 
-
+//construction de la zone de selection dans le cas de promotion de pion (au depart invisible)
 for (let l=2;l<6;l++){
 	
 	let cell=document.createElement("td");
@@ -125,6 +137,8 @@ for (let l=2;l<6;l++){
 	img.style.width="30px";
 	img.style.height="30px";
 	
+	img.addEventListener('click',function(){choosePromotion(l)});
+	
 	br=document.createElement("br");
 	
 	//image='url("images/'+l+'.png")';
@@ -132,62 +146,88 @@ for (let l=2;l<6;l++){
 	//ligne_promotion.appendChild(cell);
 	
 	promotion.appendChild(img);
-	promotion.appendChild(br);
+	//promotion.appendChild(br);
 }
+promotion.style.display="none";
 
+var promotionSquare; //used when a promotion is being choosed
 
-promotion.style.visibility="hidden";
+//partie de gestion du jeu
 
+var joueur;//d'abord les blancs, vaudrait -1 pendant le tour des noirs
+var your_turn=false;
 
+var roquePossible=true;
 
-
-update();
-
+const K=1; //pour rendre plus clair l'utilisation des codes avec par exemple K ou -K au lieu de 1 ou -1 pour un roi
+const Q=2;
+const B=3;
+const N=4;
+const R=5;
+const P=6;
 
 function promote(){
-	promotion.style.visibility="visible";
+	promotion.style.display="block";
+}
+
+function convert(old_board){//convertit de la vue du noir a celle du blanc et vice versa
+	let new_board=[];
+	for (let k=0;k<8;k++){
+		new_board.push(new Array(8));
+	}
+	
+	for (let k=0;k<8;k++){
+			for (let l=0;l<8;l++){
+				new_board[7-k][7-l]=old_board[k][l];
+			}
+		}
+	return new_board;
+
 }
 
 function selectCell(k,l){
 	console.log(k+","+l);
-	if (current==undefined){
-		current=[k,l];
-		cell=table[k][l];
-		cell.style.backgroundColor="green";
-	}
-	else{
-		let x=current[0];
-		let y=current[1];
-		current=undefined;
-		cell=table[x][y];
-		if ((x+y)%2==1) cell.style.backgroundColor="rgb(255,200,160)";
-		else cell.style.backgroundColor="white";
-		
-		
-		
-		if (coup_ok(turn,[x,y],[k,l])){
+	
+	if (your_turn){
+		if (current==undefined){
+			current=[k,l];
+			cell=table[k][l];
+			cell.style.backgroundColor="green";
+		}
+		else{
+			let x=current[0];
+			let y=current[1];
+			current=undefined;
+			cell=table[x][y];
+			if ((x+y)%2==1) cell.style.backgroundColor="rgb(255,200,160)";
+			else cell.style.backgroundColor="white";
 			
 			
-			board[k][l]=board[x][y];
-			board[x][y]=0;
 			
-			if (is_check(1)) console.log("blanc menacé");
-			if (is_check(-1)) console.log("noir menacé");
-			
-			if (!(reste_coup_possible(-turn))){
-				if (turn==1) infoEchec.textContent="Blanc a gagné";
-				else infoEchec.textContent="Noir a gagné";
+			if (coup_ok(joueur,[x,y],[k,l])){
+				
+				
+				board[k][l]=board[x][y];
+				board[x][y]=0;
+				
+				update();
+				
+				if (Math.abs(board[k][l])==K){
+					roquePossible=false; //le roi a bougé donc roque plus possible
+				}
+				
+				if (k==0 && Math.abs(board[k][l])==P){//promotion
+					promotion.style.display="block";
+					promotionSquare=[k,l];
+				}
+				else{
+				
+					endTurn();
+				
+				}
+				
+				
 			}
-			
-			
-			update();
-			turn=-turn;
-			
-			if (turn==1) couleur.textContent="blanc";
-			else couleur.textContent="noir";
-			
-			
-			
 		}
 	}
 }
@@ -195,7 +235,8 @@ function selectCell(k,l){
 function update(){
 	for (var k=0;k<8;k++){
 		for (var l=0;l<8;l++){
-			let piece=board[k][l];
+		
+			let piece=board[k][l];			
 			let cell=table[k][l];
 			if (piece!=0){
 				image='url("images/'+piece+'.png")';
@@ -207,8 +248,6 @@ function update(){
 		}
 	}
 }
-
-var turn=1; //d'abord les blancs, vaudrait -1 pendant le tour des noirs
 
 function deplacement_ok(camp,start,end){
 	let x1=start[0];
@@ -228,13 +267,13 @@ function deplacement_ok(camp,start,end){
 	}
 	
 	if (Math.abs(piece1)==P){ //cas du pion
-		if (piece2==0 && y2==y1 && x2==x1-camp){ //le signe de camp permet de vérifier l'avancement dans la bonne direction d'une case
+		if (piece2==0 && y2==y1 && x2==x1-1){ //le pion doit toujours avancer vers le haut (puisque on affiche les pieces du joueur en bas et de l'ennemi en haut dans tous les cas)
 			return true; //avancee normale d'une case
 		}
-		if (piece2==0 && y2==y1 && x1==(7-camp)%7 && x2==x1-2*camp){ 
+		if (piece2==0 && y2==y1 && x1==6 && x2==x1-2){ 
 			return true; //avancee de deux cases pour un pion au debut
 		}
-		if (piece2*piece1<0 && Math.abs(y2-y1)==1 && x2==x1-camp){
+		if (piece2*piece1<0 && Math.abs(y2-y1)==1 && x2==x1-1){
 			return true; //prise d'une piece ennemie
 		}
 		
@@ -301,7 +340,7 @@ function deplacement_ok(camp,start,end){
 	}
 	
 	if (Math.abs(piece1)==K){//cas du roi
-		if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)<=2){
+		if ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)<=2){//mouvement normal, le roque est verifie dans coup_ok
 			return true;
 		}
 	}
@@ -357,30 +396,68 @@ function is_check(camp){ //verifie si il y a un echec menacant camp (camp = 1 po
 }
 
 function coup_ok(camp,start,end){
+
+	let x1=start[0];
+	let y1=start[1];
+	let x2=end[0];
+	let y2=end[1];
+	
+	let piece1=board[x1][y1];
+	let piece2=board[x2][y2];
+
+	//deplacement_ok verifie seulement les deplacements standards donc on verifie aussi le cas du roque
+	let roque=false;
+	if (Math.abs(piece1)==K && Math.abs(y2-y1)==2 && x1==x2 && roquePossible){
+		
+	}
 	
 	if (deplacement_ok(camp,start,end)){
-		let x1=start[0];
-		let y1=start[1];
-		let x2=end[0];
-		let y2=end[1];
 		
-		let stock=board[x2][y2];
-		board[x2][y2]=board[x1][y1];
+		board[x2][y2]=piece1;
 		board[x1][y1]=0;
 		
 		let check=is_check(camp);
-		board[x1][y1]=board[x2][y2];
-		board[x2][y2]=stock;
+		board[x1][y1]=piece1;
+		board[x2][y2]=piece2;
 		
 		if (!check) return true;
 			
 		}
 	
+	//on verifie le cas du roque ici et pas dans deplacement_ok car il faut faire appel a deplacement_ok pour verifier les non-echecs
 		
 	return false;	
 }
 
+function choosePromotion(piece){
+	x=promotionSquare[0];
+	y=promotionSquare[1];
+	
+	board[x][y]=joueur*piece;
+	update();
+	
+	promotion.style.display="none";
+	
+	endTurn();
+}
 
-
+function endTurn(){
+	if(joueur==1){
+		socket.emit('update',JSON.stringify(board));
+	}
+	else{
+		socket.emit('update',JSON.stringify(convert(board)));
+	}
+					
+	your_turn=false;
+					
+	if (is_check(1)) console.log("blanc menacé");
+	if (is_check(-1)) console.log("noir menacé");
+					
+	if (!(reste_coup_possible(-joueur))){
+		if (joueur==1) infoEchec.textContent="Blanc a gagné";
+		else infoEchec.textContent="Noir a gagné";
+	}
+}
 
 </script>
