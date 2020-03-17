@@ -41,7 +41,7 @@ img{
 <body>
 <h1>Jeu d'échecs</h1>
 <div id="contenu">
-<p>Tour du joueur <span id="couleur">blanc</span></p>
+<p>Vous etes le joueur <span id="indication_joueur"></span></p>
 <table id="echiquier" style="float:left"></table>
   
  <div id="promotion" style="float:left">Promotion :<br/><hr/></div></div>
@@ -67,14 +67,13 @@ socket.on('disconnect',function(){
 
 socket.on('init',function(couleur,data){
 	joueur=couleur;
-	if (couleur==1){
+	if(joueur==1){
+		indication_joueur.textContent="Blanc";
+		board=JSON.parse(data);
 		your_turn=true;
 	}
-	
-	if(joueur==1){
-		board=JSON.parse(data);
-	}
 	else{
+		indication_joueur.textContent="Noir";
 		board=convert(JSON.parse(data));
 	}
 	update();
