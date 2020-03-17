@@ -10,5 +10,5 @@ Application de web de jeu d'échecs multijoueur
 
 * Utiliser la commande "node server.js" pour lancer le serveur.
 
-Les joueurs doivent ensuite se connecter à l'adresse localhost:8080 (ou en remplacant localhost par l'adresse IP de la machine hébergeant le serveur si on s'y connecte depuis une autre machine.
+Les joueurs doivent ensuite se connecter à l'adresse localhost:8080, ou en remplacant localhost par l'adresse IP de la machine hébergeant le serveur si on s'y connecte depuis une autre machine.
 
