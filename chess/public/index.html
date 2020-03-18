@@ -9,31 +9,49 @@
 
 
 td {
-	padding : 3px;
+	padding : 0.25vw;
 	background-repeat: no-repeat;
 	background-position: center;
-	background-size: 36px;
+	background-size: 2.5vw;
 }
 
 td:hover {
-	border: 3px solid red;
+	border: 0.25vw solid red;
 	padding:0;
 }
 
 div{
 	align-content:center;
-	padding-left:20px;
+	
 }
 
 img{
-	padding-left : 5px;
+	padding-left : 1vw;
 }
 
 #echiquier{
 	border : solid black;
-	padding : 0;
+	margin : 0 5vw;
 }
 
+#promotion{
+padding-top:1vw;
+margin : 0 5vw;
+width : 30vw;
+text-align:center;
+}
+
+#chat{
+	width : 40vw;
+	
+	border : solid black;
+}
+
+#chatContent{
+	height : 22.5vw;
+	overflow : auto;
+	
+}
 
 </style>
 
@@ -43,13 +61,14 @@ img{
 <div id="contenu">
 <p>Vous etes le joueur <span id="indication_joueur"></span></p>
 <table id="echiquier" style="float:left"></table>
-  
- <div id="promotion" style="float:left">Promotion :<br/><hr/></div></div>
- 
- 
- <div id="infoEchec"></div>
 
-<div style="clear: both;"></div>
+<div id="chat" style="float:left">Chat :<br/><hr/> <div id="chatContent"></div> </div>
+  
+ <div id="promotion" style="clear:left">Promotion :<br/><hr/></div></div>
+ 
+ 
+ <div id="infoEchec" style="clear:left"></div>
+
 </body>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -107,8 +126,8 @@ for (let k=0;k<8;k++)
 		if ((k+l)%2==1) cell.style.backgroundColor="rgb(255,200,160)";
 		else cell.style.backgroundColor="white";
 		
-		cell.style.width="40px";
-		cell.style.height="40px";
+		cell.style.width="3vw";
+		cell.style.height="3vw";
 		
 		
 		cell.addEventListener('click',function(){selectCell(k,l)});
@@ -133,8 +152,8 @@ for (let l=2;l<6;l++){
 	
 	img=document.createElement("img");
 	img.src="images/"+l+".png";
-	img.style.width="30px";
-	img.style.height="30px";
+	img.style.width="4vw";
+	img.style.height="4vw";
 	
 	img.addEventListener('click',function(){choosePromotion(l)});
 	
@@ -167,6 +186,14 @@ const P=6;
 
 function promote(){
 	promotion.style.display="block";
+}
+
+function message(text){
+	let texte = document.createTextNode(text);
+	let br = document.createElement("br");
+	chatContent.appendChild(texte);
+	chatContent.appendChild(br);
+	chatContent.scrollTop = chatContent.scrollHeight;
 }
 
 function convert(old_board){//convertit de la vue du noir a celle du blanc et vice versa
