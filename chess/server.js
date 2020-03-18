@@ -27,6 +27,10 @@ io.on('connection', function(socket){
 			socketNoir.emit('update',data);
 		});
 		
+		socketBlanc.on('chat',function(message){
+			socketNoir.emit('chat',message);
+		});
+		
 		
 		
 	}
@@ -44,6 +48,10 @@ io.on('connection', function(socket){
 		socketNoir.on('update',function(data){
 			board=JSON.parse(data);
 			socketBlanc.emit('update',data);
+		});
+		
+		socketNoir.on('chat',function(message){
+			socketBlanc.emit('chat',message);
 		});
 		
 	}

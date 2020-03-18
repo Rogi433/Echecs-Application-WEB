@@ -43,7 +43,7 @@ text-align:center;
 
 #chat{
 	width : 40vw;
-	
+	text-align:center;
 	border : solid black;
 }
 
@@ -51,6 +51,16 @@ text-align:center;
 	height : 22.5vw;
 	overflow : auto;
 	
+}
+
+#inputZone{
+	padding-bottom: 1vw;
+	
+}
+
+input,label,button{
+	width : 10vw;
+	font-size: 1.5vw;
 }
 
 </style>
@@ -62,7 +72,10 @@ text-align:center;
 <p>Vous etes le joueur <span id="indication_joueur"></span></p>
 <table id="echiquier" style="float:left"></table>
 
-<div id="chat" style="float:left">Chat :<br/><hr/> <div id="chatContent"></div> </div>
+<div id="chat" style="float:left">Chat :<br/><hr style="height : 0.1vw; background : black"/> <div id="chatContent"></div><br/><hr style="height : 0.1vw; background : black"/>
+<div id="inputZone"><label for="messageText">Message à envoyer :</label>
+  <input type="text" id="messageText" name="messageText"> <button id="boutonEnvoi">Envoyer</button> </div>
+  </div>
   
  <div id="promotion" style="clear:left">Promotion :<br/><hr/></div></div>
  
@@ -109,6 +122,18 @@ socket.on('update',function(data){
 	your_turn=true;
 });
 
+boutonEnvoi.addEventListener('click',function(){
+	let message=messageText.value;
+	if (message!=""){
+		messageText.value="";
+		socket.emit('chat',message);
+		ecrit(message,true);
+	}
+});
+
+socket.on('chat',function(message){
+	ecrit(message,false);
+});
 
 //construction de la table correspondant a l'echiquier
 var table=[];
@@ -188,11 +213,20 @@ function promote(){
 	promotion.style.display="block";
 }
 
-function message(text){
-	let texte = document.createTextNode(text);
-	let br = document.createElement("br");
+function ecrit(message,soiMeme){
+	let texte = document.createElement("div");
+	texte.textContent=message;
+	if (soiMeme){
+		texte.style.textAlign="right";
+		texte.style.color="blue";
+	}
+	else{
+		texte.style.textAlign="left";
+		texte.style.color="red";
+	}
+	let hr = document.createElement("hr");
 	chatContent.appendChild(texte);
-	chatContent.appendChild(br);
+	chatContent.appendChild(hr);
 	chatContent.scrollTop = chatContent.scrollHeight;
 }
 
