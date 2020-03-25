@@ -2,7 +2,7 @@
 var express = require('express'), app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
-var port=8080;
+var port = process.env.PORT || 8080;
 
 app.get('/*',express.static(__dirname + '/public'));
 
@@ -27,6 +27,15 @@ io.on('connection', function(socket){
 			socketNoir.emit('update',data);
 		});
 		
+		socketBlanc.on('chat',function(message){
+			socketNoir.emit('chat',message);
+		});
+		
+		socketBlanc.on('end',function(data,gagnant){
+			console.log("endblanc");
+			socketNoir.emit('end',data,gagnant);
+		});
+		
 		
 		
 	}
@@ -44,6 +53,14 @@ io.on('connection', function(socket){
 		socketNoir.on('update',function(data){
 			board=JSON.parse(data);
 			socketBlanc.emit('update',data);
+		});
+		
+		socketNoir.on('chat',function(message){
+			socketBlanc.emit('chat',message);
+		});
+		
+		socketNoir.on('end',function(data,gagnant){
+			socketBlanc.emit('end',data,gagnant);
 		});
 		
 	}
