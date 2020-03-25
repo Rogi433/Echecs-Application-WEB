@@ -69,7 +69,8 @@ input,label,button{
 <body>
 <h1>Jeu d'échecs</h1>
 <div id="contenu">
-<p>Vous etes le joueur <span id="indication_joueur"></span></p>
+<p>Vous etes le joueur <span id="indication_joueur"></span> 
+<br/> <span id="info_tour"></span></p>
 <table id="echiquier" style="float:left"></table>
 
 <div id="chat" style="float:left">Chat :<br/><hr style="height : 0.1vw; background : black"/> <div id="chatContent"></div><br/><hr style="height : 0.1vw; background : black"/>
@@ -80,7 +81,7 @@ input,label,button{
  <div id="promotion" style="clear:left">Promotion :<br/><hr/></div></div>
  
  
- <div id="infoEchec" style="clear:left"></div>
+ <div id="infoPartie" style="clear:left"></div>
 
 </body>
 
@@ -103,10 +104,12 @@ socket.on('init',function(couleur,data){
 		indication_joueur.textContent="Blanc";
 		board=JSON.parse(data);
 		your_turn=true;
+		info_tour.textContent="A vous de jouer !";
 	}
 	else{
 		indication_joueur.textContent="Noir";
 		board=convert(JSON.parse(data));
+		info_tour.textContent="En atttente de l'autre joueur...";
 	}
 	update();
 });
@@ -120,6 +123,14 @@ socket.on('update',function(data){
 	}
 	update();
 	your_turn=true;
+	info_tour.textContent="A vous de jouer !";
+});
+
+messageText.addEventListener("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode === 13) {
+        boutonEnvoi.click();
+    }
 });
 
 boutonEnvoi.addEventListener('click',function(){
@@ -134,6 +145,16 @@ boutonEnvoi.addEventListener('click',function(){
 socket.on('chat',function(message){
 	ecrit(message,false);
 });
+
+socket.on('end',fin_partie);
+
+function fin_partie(gagnant){
+	your_turn=false;
+	if (gagnant==joueur) info_tour.textContent="Partie finie : vous avez gagné !";
+	else if(gagnant==-joueur) info_tour.textContent="Partie finie : vous avez perdu !";
+	else info_tour.textContent="Partie finie : égalité (par Pat) !";
+	}
+
 
 //construction de la table correspondant a l'echiquier
 var table=[];
@@ -502,6 +523,17 @@ function choosePromotion(piece){
 }
 
 function endTurn(){
+	if (!(reste_coup_possible(-joueur))){
+		if (is_check(-joueur)){
+			socket.emit('end',joueur);
+			fin_partie(joueur);
+		}
+		else {
+			socket.emit('end',0);
+			fin_partie(0);
+		}
+	}
+
 	if(joueur==1){
 		socket.emit('update',JSON.stringify(board));
 	}
@@ -510,14 +542,12 @@ function endTurn(){
 	}
 					
 	your_turn=false;
+	info_tour.textContent="En atttente de l'autre joueur...";
 					
 	if (is_check(1)) console.log("blanc menacé");
 	if (is_check(-1)) console.log("noir menacé");
 					
-	if (!(reste_coup_possible(-joueur))){
-		if (joueur==1) infoEchec.textContent="Blanc a gagné";
-		else infoEchec.textContent="Noir a gagné";
-	}
+	
 }
 
 </script>
