@@ -122,8 +122,20 @@ socket.on('update',function(data){
 		board=convert(JSON.parse(data));
 	}
 	update();
-	your_turn=true;
-	info_tour.textContent="A vous de jouer !";
+	
+	if (reste_coup_possible()){
+		your_turn=true;
+		info_tour.textContent="A vous de jouer !";
+	}
+	else if (is_check(joueur)){
+			socket.emit('end',data,-joueur);
+			fin_partie(-joueur);
+			console.log("fin")
+		}
+		else {
+			socket.emit('end',data,0);
+			fin_partie(0);
+		}
 });
 
 messageText.addEventListener("keyup", function(event) {
@@ -146,7 +158,18 @@ socket.on('chat',function(message){
 	ecrit(message,false);
 });
 
-socket.on('end',fin_partie);
+socket.on('end',function(data,gagnant){
+	if(joueur==1){
+		board=JSON.parse(data);
+	}
+	else{
+		board=convert(JSON.parse(data));
+	}
+	update();
+	fin_partie(gagnant);
+	console.log("receive");
+	
+});
 
 function fin_partie(gagnant){
 	your_turn=false;
@@ -221,7 +244,8 @@ var promotionSquare; //used when a promotion is being choosed
 var joueur;//d'abord les blancs, vaudrait -1 pendant le tour des noirs
 var your_turn=false;
 
-var roquePossible=true;
+var roqueGauchePossible=true;
+var roqueDroitPossible=true;
 
 const K=1; //pour rendre plus clair l'utilisation des codes avec par exemple K ou -K au lieu de 1 ou -1 pour un roi
 const Q=2;
@@ -285,17 +309,37 @@ function selectCell(k,l){
 			
 			
 			
-			if (coup_ok(joueur,[x,y],[k,l])){
+			if (coup_ok([x,y],[k,l])){
 				
-				
+				//déplacement de la piece ayant bougé
 				board[k][l]=board[x][y];
 				board[x][y]=0;
 				
+				if (Math.abs(board[k][l])==K && l==y-2){//si roque gauche on doit aussi déplacer la tour gauche
+					board[k][y-1]=board[k][0];
+					board[k][0]=0;
+				}
+				
+				if (Math.abs(board[k][l])==K && l==y+2){//si roque droit on doit aussi déplacer la tour droite
+					board[k][y+1]=board[k][7];
+					board[k][7]=0;
+				}
+				
 				update();
 				
+				
+				//puis prise en compte des conséquences du déplacement
 				if (Math.abs(board[k][l])==K){
-					roquePossible=false; //le roi a bougé donc roque plus possible
+					roqueGauchePossible=false; //le roi a bougé donc roque plus possible
+					roqueDroitPossible=false;
 				}
+				if (Math.abs(board[k][l])==R && y==0){
+					roqueGauchePossible=false; //la tour gauche n'est pas resté tout le temps a sa position initiale donc roque gauche plus possible
+				}
+				if (Math.abs(board[k][l])==R && y==7){
+					roqueDroitPossible=false; //la tour droite n'est pas resté tout le temps a sa position initiale donc roque droit plus possible
+				}
+				
 				
 				if (k==0 && Math.abs(board[k][l])==P){//promotion
 					promotion.style.display="block";
@@ -432,16 +476,16 @@ function deplacement_ok(camp,start,end){
 
 }
 
-function reste_coup_possible(camp){ //verifie si il reste au moins un coup possible pour camp (camp = 1 pour le blanc ou -1 pour le noir)
+function reste_coup_possible(){ //verifie si il reste au moins un coup possible pour "joueur"
 	
 	for (let x1=0;x1<8;x1++){
 		for (let y1=0;y1<8;y1++) {
 		
-			if (board[x1][y1]*camp>0) {//piece de la bonne couleur
+			if (board[x1][y1]*joueur>0) {//piece de la bonne couleur
 			
 				for (let x2=0;x2<8;x2++){
 					for (let y2=0;y2<8;y2++) {
-						if (coup_ok(camp,[x1,y1],[x2,y2])) return true;				
+						if (coup_ok([x1,y1],[x2,y2])) return true;				
 					}
 				}
 			
@@ -476,7 +520,7 @@ function is_check(camp){ //verifie si il y a un echec menacant camp (camp = 1 po
 	return false;	
 }
 
-function coup_ok(camp,start,end){
+function coup_ok(start,end){ //verifie que ce coup est ok pour "joueur"
 
 	let x1=start[0];
 	let y1=start[1];
@@ -485,27 +529,59 @@ function coup_ok(camp,start,end){
 	
 	let piece1=board[x1][y1];
 	let piece2=board[x2][y2];
-
-	//deplacement_ok verifie seulement les deplacements standards donc on verifie aussi le cas du roque
-	let roque=false;
-	if (Math.abs(piece1)==K && Math.abs(y2-y1)==2 && x1==x2 && roquePossible){
-		
-	}
 	
-	if (deplacement_ok(camp,start,end)){
+	if (deplacement_ok(joueur,start,end)){
 		
 		board[x2][y2]=piece1;
 		board[x1][y1]=0;
 		
-		let check=is_check(camp);
+		let check=is_check(joueur);
 		board[x1][y1]=piece1;
 		board[x2][y2]=piece2;
 		
 		if (!check) return true;
 			
 		}
+
+	if (Math.abs(piece1)==K && x1==7 && x1==x2){//deplacement_ok verifie seulement les deplacements standards donc on verifie aussi le cas du roque
 	
-	//on verifie le cas du roque ici et pas dans deplacement_ok car il faut faire appel a deplacement_ok pour verifier les non-echecs
+		if (y2-y1==-2 &&  roqueGauchePossible){//roque gauche
+		
+			let espace_libre = true; //verifie que l'espace entre tour et roi est libre
+			for (let y=1;y<y1;y++){
+				if (board[x1][y]!=0) espace_libre = false;
+			}
+			
+			let espace_non_menace = true; //verifie que les cases que le roi va traverser (y compris celle ou il commence et celle ou il finit) sont non menacées 
+			for (let y=y1; y>=y2; y--){
+				let piece_case=board[x1][y];
+				board[x1][y]=K*joueur;
+				if (is_check(joueur)) espace_non_menace = false;
+				board[x1][y]=piece_case;
+			}
+			
+			if (espace_libre && espace_non_menace) return true;
+			
+		}
+		if (y2-y1==2 &&  roqueDroitPossible){//roque droit
+		
+			let espace_libre = true; //verifie que l'espace entre tour et roi est libre
+			for (let y=6;y>y1;y--){
+				if (board[x1][y]!=0) espace_libre = false;
+			}
+			
+			let espace_non_menace = true; //verifie que les cases que le roi va traverser (y compris celle ou il commence et celle ou il finit) sont non menacées 
+			for (let y=y1; y<=y2; y++){
+				let piece_case=board[x1][y];
+				board[x1][y]=K*joueur;
+				if (is_check(joueur)) espace_non_menace = false;
+				board[x1][y]=piece_case;
+			}
+			
+			if (espace_libre && espace_non_menace) return true;
+		
+		}
+	}
 		
 	return false;	
 }
@@ -523,29 +599,24 @@ function choosePromotion(piece){
 }
 
 function endTurn(){
-	if (!(reste_coup_possible(-joueur))){
-		if (is_check(-joueur)){
-			socket.emit('end',joueur);
-			fin_partie(joueur);
-		}
-		else {
-			socket.emit('end',0);
-			fin_partie(0);
-		}
+	let data;
+	if(joueur==1){
+		data=JSON.stringify(board);
+	}
+	else{
+		data=JSON.stringify(convert(board));
 	}
 
 	if(joueur==1){
-		socket.emit('update',JSON.stringify(board));
+		socket.emit('update',data);
 	}
 	else{
-		socket.emit('update',JSON.stringify(convert(board)));
+		socket.emit('update',data);
 	}
 					
 	your_turn=false;
 	info_tour.textContent="En atttente de l'autre joueur...";
 					
-	if (is_check(1)) console.log("blanc menacé");
-	if (is_check(-1)) console.log("noir menacé");
 					
 	
 }
