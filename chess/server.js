@@ -91,9 +91,6 @@ for (var k=0;k<8;k++){
 	newligne1.push(-ligne1[k]);
 	newligne2.push(-ligne2[k]);
 }
-board[5][3]=-2;
-newligne2=[6,6,6,6,0,6,6,6];
-newligne1=[5,4,3,1,0,0,3,4,5];
 board.push(newligne2);
 board.push(newligne1);
 
