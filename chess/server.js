@@ -6,40 +6,87 @@ var port = process.env.PORT || 8080;
 
 app.get('/*',express.static(__dirname + '/public'));
 
-var plateaux=[];
-var noms=[];
-var socketsBlanc=[];
-var socketsNoir=[];
+
+class Partie {
+constructor(id,plateau, nom, socketBlanc, socketNoir,tour) {
+this.id = id;
+this.plateau = plateau;
+this.nom = nom;
+this.socketBlanc = socketBlanc;
+this.socketNoir = socketNoir;
+this.tour=tour;
+}
+}
+
+var parties=[];
 
 var current_id=0;
 
-var socketBlanc=undefined;
-var socketNoir=undefined;
-
 io.on('connection', function(socket){
 	
-	socket.emit('listeParties',JSON.stringify(noms));
+	socket.id=undefined;
+	socket.joueur=undefined;
+	
+	//on cree la liste des parties existantes a envoyer
+	let noms=[];//les noms des parties
+	let blancLibres=[];//booleens indiquant si la place est du joueur blanc est libre
+	let noirLibres=[];//booleens indiquant si la place est du joueur noir est libre
+	for (let i=0;i<current_id;i++){
+		noms.push(parties[i].nom);
+		blancLibres.push(parties[i].socketBlanc==undefined);
+		noirLibres.push(parties[i].socketNoir==undefined);
+	}
+	socket.emit('listeParties',JSON.stringify(noms),JSON.stringify(blancLibres),JSON.stringify(noirLibres));
 	
 	socket.on('createGame',function(nom,fnc){
-		fnc(current_id,nom);
-		plateaux.push(initBoard());
-		noms.push(nom);
-		socketsBlanc.push(undefined);
-		socketsNoir.push(undefined);
+		fnc(current_id,nom,true,true);
+		parties.push(new Partie(current_id,initBoard(),nom,undefined,undefined,1));
 		current_id++;
 	});
+	
+	socket.on('disconnect',function(){
+		if (socket.id!=undefined){
+			if (socket.joueur==1){
+				parties[socket.id].socketBlanc=undefined;
+				autreSocket=parties[socket.id].socketNoir;
+				if (autreSocket!=undefined){
+					autreSocket.emit('pause',true);
+				}
+			}
+			else{
+				parties[socket.id].socketNoir=undefined;
+				autreSocket=parties[socket.id].socketBlanc;
+				if (autreSocket!=undefined){
+					autreSocket.emit('pause',true);
+				}
+			}
+			
+			
+		
+		}
+	});
+	
 	
 	socket.on('joinGame',function(id,joueur){
 		console.log("join");
 		socket.id=id;
 		socket.joueur=joueur;
-		socket.emit('init',joueur,JSON.stringify(plateaux[id]));
+		socket.emit('init',joueur,parties[id].tour,JSON.stringify(parties[id].plateau));
 		if (joueur==1){
-			socketsBlanc[id]=socket;
-			
+			parties[id].socketBlanc=socket;
+			autreSocket=parties[socket.id].socketNoir;
+			if (autreSocket!=undefined){
+				socket.emit('pause',false);
+				autreSocket.emit('pause',false);
+			}			
 		}
 		else{
-			socketsNoir[id]=socket;
+			parties[id].socketNoir=socket;
+			autreSocket=parties[socket.id].socketBlanc;
+			if (autreSocket!=undefined){
+				socket.emit('pause',false);
+				autreSocket.emit('pause',false);
+			}
 		}
 		
 		console.log("connecté");
@@ -51,93 +98,35 @@ io.on('connection', function(socket){
 		
 		socket.on('update',function(data){
 			board=JSON.parse(data);
+			parties[socket.id].plateau=board;
+			parties[socket.id].tour*=-1;
 			
 			if (socket.joueur==1){
-				socketsNoir[socket.id].emit('update',data);
+				parties[socket.id].socketNoir.emit('update',data);
 			}
 			else{
-				socketsBlanc[socket.id].emit('update',data);
+				parties[socket.id].socketBlanc.emit('update',data);
 			}
 		});
 		
 		socket.on('chat',function(message){
 			if (socket.joueur==1){
-				socketsNoir[socket.id].emit('chat',message);
+				parties[socket.id].socketNoir.emit('chat',message);
 			}
 			else{
-				socketsBlanc[socket.id].emit('chat',message);
+				parties[socket.id].socketBlanc.emit('chat',message);
 			}
 		});
 		
 		socket.on('end',function(data,gagnant){
 			if (socket.joueur==1){
-				socketsNoir[socket.id].emit('end',data,gagnant);
+				parties[socket.id].socketNoir.emit('end',data,gagnant);
 			}
 			else{
-				socketsBlanc[socket.id].emit('end',data,gagnant);
+				parties[socket.id].socketBlanc.emit('end',data,gagnant);
 			}
 		});
 	});
-	/*
-	if (socketBlanc==undefined){
-		socketBlanc=socket;
-		console.log("Blanc connecté");
-		
-		socketBlanc.emit('init',1,JSON.stringify(board));
-		
-		socketBlanc.on('disconnect',function(){
-			socketBlanc=undefined;
-			console.log("blanc deconnecté");
-		});
-		
-		socketBlanc.on('update',function(data){
-			board=JSON.parse(data);
-			socketNoir.emit('update',data);
-		});
-		
-		socketBlanc.on('chat',function(message){
-			socketNoir.emit('chat',message);
-		});
-		
-		socketBlanc.on('end',function(data,gagnant){
-			console.log("endblanc");
-			socketNoir.emit('end',data,gagnant);
-		});
-		
-		
-		
-	}
-	else if(socketNoir==undefined){
-		socketNoir=socket;
-		console.log("Noir connecté");
-		
-		socketNoir.emit('init',-1,JSON.stringify(board));
-		
-		socketNoir.on('disconnect',function(){
-			socketNoir=undefined;
-			console.log("noir déconnecté");
-		});
-		
-		socketNoir.on('update',function(data){
-			board=JSON.parse(data);
-			socketBlanc.emit('update',data);
-		});
-		
-		socketNoir.on('chat',function(message){
-			socketBlanc.emit('chat',message);
-		});
-		
-		socketNoir.on('end',function(data,gagnant){
-			socketBlanc.emit('end',data,gagnant);
-		});
-		
-	}
-	else{
-		socket.emit('err', { message: "Deja deux joueurs connectés" })
-		socket.disconnect()
-		console.log('Disconnected')
-	}
-	*/
 });
 
 

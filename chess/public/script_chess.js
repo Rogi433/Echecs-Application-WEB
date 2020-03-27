@@ -1,26 +1,38 @@
 var board=[];
 
-//var socket = io();
 
-socket.on('disconnect',function(){
-	contenu.textContent="Vous etes déconnecté";
-});
-
-socket.on('init',function(couleur,data){
+socket.on('init',function(couleur,turn,data){
 	joueur=couleur;
 	console.log("ok");
 	if(joueur==1){
 		indication_joueur.textContent="Blanc";
 		board=JSON.parse(data);
-		your_turn=true;
-		info_tour.textContent="A vous de jouer !";
 	}
 	else{
 		indication_joueur.textContent="Noir";
 		board=convert(JSON.parse(data));
-		info_tour.textContent="En atttente de l'autre joueur...";
 	}
+	your_turn=turn==joueur;
 	update();
+});
+
+socket.on('pause',function(bool){
+	pause=bool;
+	
+	if (!fini){
+		
+		if (pause){
+			info_tour.textContent="En pause tant qu'il n'y a pas deux joueur connectés à la partie...";
+		}
+		else{
+			if (your_turn){
+				info_tour.textContent="A vous de jouer !";
+			}
+			else{
+				info_tour.textContent="En attente de l'autre joueur...";
+			}
+		}
+	}
 });
 
 socket.on('update',function(data){
@@ -55,11 +67,13 @@ messageText.addEventListener("keyup", function(event) {
 });
 
 boutonEnvoi.addEventListener('click',function(){
-	let message=messageText.value;
-	if (message!=""){
-		messageText.value="";
-		socket.emit('chat',message);
-		ecrit(message,true);
+	if(!pause){
+		let message=messageText.value;
+		if (message!=""){
+			messageText.value="";
+			socket.emit('chat',message);
+			ecrit(message,true);
+		}
 	}
 });
 
@@ -83,7 +97,7 @@ socket.on('end',function(data,gagnant){
 //window.location.replace("index2.html");
 
 function fin_partie(gagnant){
-	your_turn=false;
+	fini=true;
 	if (gagnant==joueur) info_tour.textContent="Partie finie : vous avez gagné !";
 	else if(gagnant==-joueur) info_tour.textContent="Partie finie : vous avez perdu !";
 	else info_tour.textContent="Partie finie : égalité (par Pat) !";
@@ -154,6 +168,8 @@ var promotionSquare; //used when a promotion is being choosed
 
 var joueur;//d'abord les blancs, vaudrait -1 pendant le tour des noirs
 var your_turn=false;
+var pause=true;
+var fini=false;
 
 var roqueGauchePossible=true;
 var roqueDroitPossible=true;
@@ -202,9 +218,8 @@ function convert(old_board){//convertit de la vue du noir a celle du blanc et vi
 }
 
 function selectCell(k,l){
-	console.log(k+","+l);
 	
-	if (your_turn){
+	if (your_turn && !pause && !fini){
 		if (current==undefined){
 			current=[k,l];
 			cell=table[k][l];

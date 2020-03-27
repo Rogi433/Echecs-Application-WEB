@@ -3,7 +3,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 
-<title>Choix de la partie d'échecs</title>
+<title>Echecs</title>
 
 <style>
 
@@ -66,6 +66,8 @@ text-align:center;
 
 <body>
 
+
+
 <div id="page_accueil">
 
 <h1>Liste des parties d'échecs</h1>
@@ -77,12 +79,14 @@ text-align:center;
 </div>
 
 
+
+
 <div id="page_jeu" style="display : none;">
 
 <h1>Jeu d'échecs</h1>
 <div id="contenu">
 <p>Vous etes le joueur <span id="indication_joueur"></span> 
-<br/> <span id="info_tour"></span></p>
+<br/> <span id="info_tour">En pause tant qu'il n'y a pas deux joueur connectés à la partie...</span></p>
 <table id="echiquier" style="float:left"></table>
 
 <div id="chat" style="float:left">Chat :<br/><hr style="height : 0.1vw; background : black"/> <div id="chatContent"></div><br/><hr style="height : 0.1vw; background : black"/>
@@ -97,19 +101,55 @@ text-align:center;
 
 </div>
 
+
+
+<div id="deconnection" style="display : none;"><h1>Attention</h1>Vous etes déconnecté</div>
+
+
+
 </body>
 
 <script src="/socket.io/socket.io.js"></script>
   
+
 <script>
 
 var socket = io();
 
-socket.on('listeParties',function(noms){
+socket.on('disconnect',function(){
+	page_accueil.style.display="none";
+	page_jeu.style.display="none";
+	deconnection.style.display="block";
+});
+
+socket.on('listeParties',function(noms,blancs,noirs){
 	liste_noms=JSON.parse(noms);
+	blancLibres=JSON.parse(blancs);
+	noirLibres=JSON.parse(noirs);
 	
-	for (let k=0; k<liste_noms.length; k++) addPartie(k,liste_noms[k]); // ajout de toutes les parties deja existantes dans la liste
+	for (let k=0; k<liste_noms.length; k++) addPartie(k,liste_noms[k],blancLibres[k],noirLibres[k]); // ajout de toutes les parties deja existantes dans la liste
 	
+});
+
+socket.on('updatePartie',function(id,blancLibre,noirLibre){
+	let div=document.getElementById(id+"_div");
+	if (div.childElementCount>1){//check if game has not ended
+		let boutonBlanc=document.getElementById(id+"_blanc");
+		let boutonNoir=document.getElementById(id+"noir");
+	
+		if (blancLibre) boutonBlanc.disabled="false";
+		else boutonBlanc.disabled="true";
+	
+		if (noirLibre) boutonNoir.disabled="false";
+		else boutonNoir.disabled="true";
+	}
+
+	
+});
+
+socket.on('endPartie',function(id){
+	let div=document.getElementById(id+"_div");
+	div.innerHTML="Cette partie est finie";
 });
 
 nomPartie.addEventListener("keyup", function(event) {
@@ -134,7 +174,6 @@ function join(id,joueur){
 	
 	socket.emit('joinGame',id,joueur);
 	
-	//window.location.replace("game.html");
 	page_accueil.style.display="none";
 	page_jeu.style.display="block";
 	
@@ -142,22 +181,30 @@ function join(id,joueur){
 	
 }
 
-function addPartie(id,name){
+function addPartie(id,name,blancLibre,noirLibre){
 
 	let div = document.createElement("div");
+	div.id=id+"_div";
+	
 	let bouton1 = document.createElement("button");
 	bouton1.textContent="Rejoindre en tant que blanc";
 	bouton1.addEventListener('click', function(){join(id,1)});
+	bouton1.id=id+"_blanc";
+	if(!blancLibre) bouton1.disabled="true";
+	
 	
 	let bouton2 = document.createElement("button");
 	bouton2.textContent="Rejoindre en tant que noir";
 	bouton2.addEventListener('click', function(){join(id,-1)});
+	bouton2.id=id+"_noir";
+	if(!noirLibre) bouton2.disabled="true";
 	
 	let texte=document.createTextNode(" - "+name+" - ");
 	
 	div.appendChild(bouton1);
 	div.appendChild(texte);
 	div.appendChild(bouton2);
+
 	
 	liste_parties.appendChild(div);
 }
