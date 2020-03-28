@@ -3,7 +3,6 @@ var board=[];
 
 socket.on('init',function(couleur,turn,data){
 	joueur=couleur;
-	console.log("ok");
 	if(joueur==1){
 		indication_joueur.textContent="Blanc";
 		board=JSON.parse(data);
@@ -51,7 +50,6 @@ socket.on('update',function(data){
 	else if (is_check(joueur)){
 			socket.emit('end',data,-joueur);
 			fin_partie(-joueur);
-			console.log("fin")
 		}
 		else {
 			socket.emit('end',data,0);
@@ -90,11 +88,9 @@ socket.on('end',function(data,gagnant){
 	}
 	update();
 	fin_partie(gagnant);
-	console.log("receive");
 	
 });
 
-//window.location.replace("index2.html");
 
 function fin_partie(gagnant){
 	fini=true;

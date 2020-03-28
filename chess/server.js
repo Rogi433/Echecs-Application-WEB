@@ -8,13 +8,14 @@ app.get('/*',express.static(__dirname + '/public'));
 
 
 class Partie {
-constructor(id,plateau, nom, socketBlanc, socketNoir,tour) {
+constructor(id,plateau, nom, socketBlanc, socketNoir,tour,fini) {
 this.id = id;
 this.plateau = plateau;
 this.nom = nom;
 this.socketBlanc = socketBlanc;
 this.socketNoir = socketNoir;
 this.tour=tour;
+this.fini=fini;
 }
 }
 
@@ -22,25 +23,17 @@ var parties=[];
 
 var current_id=0;
 
+
 io.on('connection', function(socket){
 	
 	socket.id=undefined;
 	socket.joueur=undefined;
 	
-	//on cree la liste des parties existantes a envoyer
-	let noms=[];//les noms des parties
-	let blancLibres=[];//booleens indiquant si la place est du joueur blanc est libre
-	let noirLibres=[];//booleens indiquant si la place est du joueur noir est libre
-	for (let i=0;i<current_id;i++){
-		noms.push(parties[i].nom);
-		blancLibres.push(parties[i].socketBlanc==undefined);
-		noirLibres.push(parties[i].socketNoir==undefined);
-	}
-	socket.emit('listeParties',JSON.stringify(noms),JSON.stringify(blancLibres),JSON.stringify(noirLibres));
+	sendParties(socket);
 	
 	socket.on('createGame',function(nom,fnc){
 		fnc(current_id,nom,true,true);
-		parties.push(new Partie(current_id,initBoard(),nom,undefined,undefined,1));
+		parties.push(new Partie(current_id,initBoard(),nom,undefined,undefined,1,false));
 		current_id++;
 	});
 	
@@ -50,7 +43,8 @@ io.on('connection', function(socket){
 				parties[socket.id].socketBlanc=undefined;
 				autreSocket=parties[socket.id].socketNoir;
 				if (autreSocket!=undefined){
-					autreSocket.emit('pause',true);
+					autreSocket.emit('pause',true);					
+					
 				}
 			}
 			else{
@@ -61,14 +55,12 @@ io.on('connection', function(socket){
 				}
 			}
 			
-			
-		
+			sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
 		}
 	});
 	
 	
 	socket.on('joinGame',function(id,joueur){
-		console.log("join");
 		socket.id=id;
 		socket.joueur=joueur;
 		socket.emit('init',joueur,parties[id].tour,JSON.stringify(parties[id].plateau));
@@ -89,12 +81,8 @@ io.on('connection', function(socket){
 			}
 		}
 		
-		console.log("connecté");
+		sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
 		
-		
-		socket.on('disconnect',function(){
-			console.log("Déconnecté");
-		});
 		
 		socket.on('update',function(data){
 			board=JSON.parse(data);
@@ -125,6 +113,9 @@ io.on('connection', function(socket){
 			else{
 				parties[socket.id].socketBlanc.emit('end',data,gagnant);
 			}
+			
+			parties[socket.id].fini=true;
+			sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
 		});
 	});
 });
@@ -133,7 +124,7 @@ io.on('connection', function(socket){
 
 server.listen(port);
 
-function initBoard(){
+function initBoard(){//initialise le plateau d'échecs
 	let board;
 	//initialisation du jeu d'echec
 	let ligne1=[-5,-4,-3,-2,-1,-3,-4,-5];
@@ -157,7 +148,28 @@ function initBoard(){
 	return board
 }
 
+function sendParties(socket){//envoie la liste des parties a 1 client (ou si socket==undefined a tous les clients connectés)
 
+			//on cree la liste des parties existantes a envoyer
+			let noms=[];//les noms des parties
+			let blancLibres=[];//booleens indiquant si la place du joueur blanc est libre
+			let noirLibres=[];//booleens indiquant si la place du joueur noir est libre
+			let finis=[];//liste indiquant si chaque partie est finie ou non
+			for (let i=0;i<current_id;i++){
+				noms.push(parties[i].nom);
+				blancLibres.push(parties[i].socketBlanc==undefined);
+				noirLibres.push(parties[i].socketNoir==undefined);
+				finis.push(parties[i].fini);
+			}
+			
+			if (socket==undefined){
+				io.sockets.emit('listeParties',JSON.stringify(noms),JSON.stringify(blancLibres),JSON.stringify(noirLibres),JSON.stringify(finis));
+			}
+			else{
+				socket.emit('listeParties',JSON.stringify(noms),JSON.stringify(blancLibres),JSON.stringify(noirLibres),JSON.stringify(finis));
+			}
+			
+};
 
 
 

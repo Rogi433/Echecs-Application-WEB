@@ -122,12 +122,14 @@ socket.on('disconnect',function(){
 	deconnection.style.display="block";
 });
 
-socket.on('listeParties',function(noms,blancs,noirs){
+socket.on('listeParties',function(noms,blancs,noirs,fins){
+	liste_parties.innerHTML="";
 	liste_noms=JSON.parse(noms);
 	blancLibres=JSON.parse(blancs);
 	noirLibres=JSON.parse(noirs);
+	finies=JSON.parse(fins);
 	
-	for (let k=0; k<liste_noms.length; k++) addPartie(k,liste_noms[k],blancLibres[k],noirLibres[k]); // ajout de toutes les parties deja existantes dans la liste
+	for (let k=0; k<liste_noms.length; k++) addPartie(k,liste_noms[k],blancLibres[k],noirLibres[k],finies[k]); // ajout de toutes les parties deja existantes dans la liste
 	
 });
 
@@ -181,29 +183,32 @@ function join(id,joueur){
 	
 }
 
-function addPartie(id,name,blancLibre,noirLibre){
+function addPartie(id,name,blancLibre,noirLibre,finie){
+
 
 	let div = document.createElement("div");
-	div.id=id+"_div";
 	
-	let bouton1 = document.createElement("button");
-	bouton1.textContent="Rejoindre en tant que blanc";
-	bouton1.addEventListener('click', function(){join(id,1)});
-	bouton1.id=id+"_blanc";
-	if(!blancLibre) bouton1.disabled="true";
-	
-	
-	let bouton2 = document.createElement("button");
-	bouton2.textContent="Rejoindre en tant que noir";
-	bouton2.addEventListener('click', function(){join(id,-1)});
-	bouton2.id=id+"_noir";
-	if(!noirLibre) bouton2.disabled="true";
-	
-	let texte=document.createTextNode(" - "+name+" - ");
-	
-	div.appendChild(bouton1);
-	div.appendChild(texte);
-	div.appendChild(bouton2);
+	if (finie){
+		div.innerHTML=name+" : partie finie !";
+	}
+	else{
+		let bouton1 = document.createElement("button");
+		bouton1.textContent="Rejoindre en tant que blanc";
+		bouton1.addEventListener('click', function(){join(id,1)});
+		if(!blancLibre) bouton1.disabled="true";
+		
+		
+		let bouton2 = document.createElement("button");
+		bouton2.textContent="Rejoindre en tant que noir";
+		bouton2.addEventListener('click', function(){join(id,-1)});
+		if(!noirLibre) bouton2.disabled="true";
+		
+		let texte=document.createTextNode(" - "+name+" - ");
+		
+		div.appendChild(bouton1);
+		div.appendChild(texte);
+		div.appendChild(bouton2);
+	}
 
 	
 	liste_parties.appendChild(div);
