@@ -35,6 +35,8 @@ io.on('connection', function(socket){
 		fnc(current_id,nom,true,true);
 		parties.push(new Partie(current_id,initBoard(),nom,undefined,undefined,1,false));
 		current_id++;
+		
+		sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
 	});
 	
 	socket.on('disconnect',function(){
@@ -83,40 +85,64 @@ io.on('connection', function(socket){
 		
 		sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
 		
+	});
+	
+	socket.on('update',function(data){
+		board=JSON.parse(data);
+		parties[socket.id].plateau=board;
+		parties[socket.id].tour = -parties[socket.id].tour;
 		
-		socket.on('update',function(data){
-			board=JSON.parse(data);
-			parties[socket.id].plateau=board;
-			parties[socket.id].tour*=-1;
+		if (socket.joueur==1){
+			parties[socket.id].socketNoir.emit('update',data);
+		}
+		else{
+			parties[socket.id].socketBlanc.emit('update',data);
+		}
+	});
+	
+	socket.on('chat',function(message){
+		if (socket.joueur==1){
+			parties[socket.id].socketNoir.emit('chat',message);
+		}
+		else{
+			parties[socket.id].socketBlanc.emit('chat',message);
+		}
+	});
+	
+	socket.on('end',function(data,gagnant){
+		if (socket.joueur==1){
+			parties[socket.id].socketNoir.emit('end',data,gagnant);
+		}
+		else{
+			parties[socket.id].socketBlanc.emit('end',data,gagnant);
+		}
+		
+		parties[socket.id].fini=true;
+		sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
+	});
+	
+	socket.on('quitGame',function(){
+		if (socket.id!=undefined){
+			if (socket.joueur==1){
+				parties[socket.id].socketBlanc=undefined;
+				autreSocket=parties[socket.id].socketNoir;
+				if (autreSocket!=undefined){
+					autreSocket.emit('pause',true);					
+					
+				}
+			}
+			else{
+				parties[socket.id].socketNoir=undefined;
+				autreSocket=parties[socket.id].socketBlanc;
+				if (autreSocket!=undefined){
+					autreSocket.emit('pause',true);
+				}
+			}
+			socket.id=undefined;
+			socket.joueur=undefined;
 			
-			if (socket.joueur==1){
-				parties[socket.id].socketNoir.emit('update',data);
-			}
-			else{
-				parties[socket.id].socketBlanc.emit('update',data);
-			}
-		});
-		
-		socket.on('chat',function(message){
-			if (socket.joueur==1){
-				parties[socket.id].socketNoir.emit('chat',message);
-			}
-			else{
-				parties[socket.id].socketBlanc.emit('chat',message);
-			}
-		});
-		
-		socket.on('end',function(data,gagnant){
-			if (socket.joueur==1){
-				parties[socket.id].socketNoir.emit('end',data,gagnant);
-			}
-			else{
-				parties[socket.id].socketBlanc.emit('end',data,gagnant);
-			}
-			
-			parties[socket.id].fini=true;
 			sendParties(undefined);//on envoie la nouvelle liste de parties a tous les clients connectés
-		});
+		}
 	});
 });
 

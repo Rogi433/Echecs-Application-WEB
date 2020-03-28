@@ -11,7 +11,17 @@ socket.on('init',function(couleur,turn,data){
 		indication_joueur.textContent="Noir";
 		board=convert(JSON.parse(data));
 	}
-	your_turn=turn==joueur;
+	if (turn==joueur){
+		your_turn=true;
+	}
+	else{
+		your_turn=false;
+	}
+	pause=true;
+	info_tour.textContent="En pause tant qu'il n'y a pas deux joueur connectés à la partie...";
+	
+	chatContent.innerHTML="";
+	
 	update();
 });
 
@@ -57,7 +67,14 @@ socket.on('update',function(data){
 		}
 });
 
-messageText.addEventListener("keyup", function(event) {
+retour.addEventListener('click', function(){
+	socket.emit('quitGame');
+	
+	page_accueil.style.display="block";
+	page_jeu.style.display="none";
+});
+
+messageText.addEventListener('keyup', function(event) {
     event.preventDefault();
     if (event.keyCode === 13) {
         boutonEnvoi.click();
