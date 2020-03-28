@@ -17,6 +17,7 @@ socket.on('init',function(couleur,turn,data){
 	else{
 		your_turn=false;
 	}
+	fini=false;
 	pause=true;
 	info_tour.textContent="En pause tant qu'il n'y a pas deux joueur connectés à la partie...";
 	
