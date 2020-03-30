@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="fr">
 <meta charset="utf-8">
@@ -7,11 +7,17 @@
 
 <style>
 
+body, html {
+	margin: 0;
+    height: 100%;
+}
+
 #page_accueil div{
 	text-align : center;
 	padding-bottom : 3vh;
 }
 
+/*Pour le tablier d'echec*/
 td {
 	padding : 0.25vw;
 	background-repeat: no-repeat;
@@ -36,31 +42,67 @@ img{
 #promotion{
 padding-top:1vw;
 margin : 0 5vw;
-width : 30vw;
+width : 100%;
 text-align:center;
 }
 
+/*Pour le tableau de chat*/
 #chat{
-	width : 40vw;
+	width : 100%;
 	text-align:center;
-	border : solid black;
+		border-right: solid black;
+	border-left: solid black;
 }
 
-#chatContent{
-	height : 22.5vw;
-	overflow : auto;
-	
-}
+    #chatContent {
+        height: 81vh;
+        overflow: auto;
+    }
 
-#inputZone{
-	padding-bottom: 1vw;
-	
-}
+    #inputZone {
+        padding-bottom: 1vw;
+    }
 
 .message{
 	width : 10vw;
 	font-size: 1.5vw;
 }
+
+/*Pour l'organisation de la page*/
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        height: 100vh;
+    }
+
+    .right {
+        width: 37%;
+    }
+
+    .left {
+        width: 25%;
+        border-right: solid black;
+        text-align: center;
+    }
+
+    .middle {
+        width: 38%;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    @media screen and (max-width: 600px) {
+        .column {
+            width: 100%;
+        }
+    }
 </style>
 
 
@@ -83,22 +125,36 @@ text-align:center;
 
 <div id="page_jeu" style="display : none;">
 
-<h1>Jeu d'échecs</h1>
-<button id="retour">Quitter la partie</button>
-<div id="contenu">
-<p>Vous etes le joueur <span id="indication_joueur"></span> 
-<br/> <span id="info_tour">En pause tant qu'il n'y a pas deux joueur connectés à la partie...</span></p>
-<table id="echiquier" style="float:left"></table>
+	<div id="contenu" class="row">
+		<div class="column left">
+			<h1>Jeu d'échecs</h1>
+			<button id="retour">Quitter la partie</button>
+			<p>
+				Vous etes le joueur <span id="indication_joueur"></span>
+				<br /> <br /> <span id="info_tour">En pause tant qu'il n'y a pas deux joueur connectés à la partie...</span>
+				<br /> <br /> <span id="feedback"></span>
+			</p>
 
-<div id="chat" style="float:left">Chat :<br/><hr style="height : 0.1vw; background : black"/> <div id="chatContent"></div><br/><hr style="height : 0.1vw; background : black"/>
-<div id="inputZone"><label class="message" for="messageText">Message à envoyer :</label>
-  <input class="message" type="text" id="messageText" name="messageText"> <button class="message" id="boutonEnvoi">Envoyer</button> </div>
-  </div>
-  
- <div id="promotion" style="clear:left">Promotion :<br/><hr/></div></div>
- 
- 
- <div id="infoPartie" style="clear:left"></div>
+			<div id="promotion" style="clear:left">Promotion :<br /><hr /></div>
+
+			<div id="infoPartie" style="clear:left"></div>
+		</div>
+
+		<div class="column middle" style="background-image: url('/images/marmore.jpg');background-size: cover;background-repeat: no-repeat;">
+			<div id="middle"><table id="echiquier" style="margin-left:auto;margin-right:auto;margin-top:100px;"></table></div>
+		</div>
+
+		<div class="column right">
+			<div id="chat" style="float:left">
+				Chat :<br /><hr style="height : 0.1vw; background : black" /> <div id="chatContent"></div><br /><hr style="height: 0.1vw; background: black" />
+				<div id="inputZone">
+					<label for="messageText">Message à envoyer :</label>
+					<input type="text" id="messageText" name="messageText"> <button id="boutonEnvoi">Envoyer</button>
+				</div>
+			</div>
+		</div>
+
+	</div>
 
 </div>
 

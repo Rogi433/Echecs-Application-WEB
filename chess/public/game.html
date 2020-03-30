@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="fr">
 <meta charset="utf-8">
@@ -7,13 +7,18 @@
 
 <style>
 
-
-td {
-	padding : 0.25vw;
-	background-repeat: no-repeat;
-	background-position: center;
-	background-size: 2.5vw;
+body, html {
+	margin: 0;
+    height: 100%;
 }
+
+/*Pour le tablier d'echec*/
+    td {
+        padding: 0.25vw;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 2.5vw;
+    }
 
 td:hover {
 	border: 0.25vw solid red;
@@ -41,10 +46,11 @@ width : 30vw;
 text-align:center;
 }
 
-#chat{
-	width : 40vw;
-	text-align:center;
-	border : solid black;
+/*Pour le tableau de chat*/
+#chat {
+    width: 40vw;
+    text-align: center;
+    border: solid black;
 }
 
 #chatContent{
@@ -63,25 +69,75 @@ input,label,button{
 	font-size: 1.5vw;
 }
 
+/*Pour l'organisation de la page*/
+    * {
+        box-sizing: border-box;
+    }
+
+    .column {
+        float: left;
+        height: 100vh;
+    }
+
+    .right {
+        width: 37%;
+    }
+
+    .left {
+        width: 25%;
+        border-right: solid black;
+        text-align: center;
+    }
+
+    .middle {
+        width: 38%;
+    }
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    @media screen and (max-width: 600px) {
+        .column {
+            width: 100%;
+        }
+    }
 </style>
 
 
 <body>
-<h1>Jeu d'échecs</h1>
-<div id="contenu">
-<p>Vous etes le joueur <span id="indication_joueur"></span> 
-<br/> <span id="info_tour"></span></p>
-<table id="echiquier" style="float:left"></table>
+	<div id="contenu" class="row">
+		<div class="column left">
+			<h1>Jeu d'échecs</h1>
+			<p>
+				Vous etes le joueur <span id="indication_joueur"></span>
+				<br /> <br /> <span id="info_tour"></span>
+				<br /> <br /> <span id="feedback"></span>
+				<br /> <br /> <span id="capture"></span>
+			</p>
 
-<div id="chat" style="float:left">Chat :<br/><hr style="height : 0.1vw; background : black"/> <div id="chatContent"></div><br/><hr style="height : 0.1vw; background : black"/>
-<div id="inputZone"><label for="messageText">Message à envoyer :</label>
-  <input type="text" id="messageText" name="messageText"> <button id="boutonEnvoi">Envoyer</button> </div>
-  </div>
-  
- <div id="promotion" style="clear:left">Promotion :<br/><hr/></div></div>
- 
- 
- <div id="infoPartie" style="clear:left"></div>
+			<div id="promotion" style="clear:left">Promotion :<br /><hr /></div>
+
+			<div id="infoPartie" style="clear:left"></div>
+		</div>
+
+		<div class="column middle" style="background-image: url('marmore.jpg');background-size: cover;background-repeat: no-repeat;">
+			<div id="middle"><table id="echiquier" style="margin-left:auto;margin-right:auto;margin-top:100px;"></table></div>
+		</div>
+
+		<div class="column right">
+			<div id="chat" style="float:left">
+				Chat :<br /><hr style="height : 0.1vw; background : black" /> <div id="chatContent"></div><br /><hr style="height: 0.1vw; background: black" />
+				<div id="inputZone">
+					<label for="messageText">Message à envoyer :</label>
+					<input type="text" id="messageText" name="messageText"> <button id="boutonEnvoi">Envoyer</button>
+				</div>
+			</div>
+		</div>
+
+	</div>
 
 </body>
 

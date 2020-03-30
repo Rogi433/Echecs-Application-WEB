@@ -112,9 +112,9 @@ socket.on('end',function(data,gagnant){
 
 function fin_partie(gagnant){
 	fini=true;
-	if (gagnant==joueur) info_tour.textContent="Partie finie : vous avez gagné !";
-	else if(gagnant==-joueur) info_tour.textContent="Partie finie : vous avez perdu !";
-	else info_tour.textContent="Partie finie : égalité (par Pat) !";
+	if (gagnant == joueur) { info_tour.textContent = "Partie finie : vous avez gagné !"; feedback.textContent = "BRAVO !"; }
+	else if (gagnant == -joueur) { info_tour.textContent = "Partie finie : vous avez perdu !"; feedback.textContent = "C'est dommage !"; }
+	else { info_tour.textContent = "Partie finie : égalité (par Pat) !"; feedback.textContent = "C'est bizarre !"; }
 	}
 
 
@@ -183,7 +183,8 @@ var promotionSquare; //used when a promotion is being choosed
 var joueur;//d'abord les blancs, vaudrait -1 pendant le tour des noirs
 var your_turn=false;
 var pause=true;
-var fini=false;
+var fini = false;
+var in_check = false;
 
 var roqueGauchePossible=true;
 var roqueDroitPossible=true;
@@ -199,7 +200,7 @@ function promote(){
 	promotion.style.display="block";
 }
 
-function ecrit(message,soiMeme){
+function ecrit(message,soiMeme){ // Pour le chat
 	let texte = document.createElement("div");
 	texte.textContent=message;
 	if (soiMeme){
@@ -237,7 +238,31 @@ function selectCell(k,l){
 		if (current==undefined){
 			current=[k,l];
 			cell=table[k][l];
-			cell.style.backgroundColor="green";
+			cell.style.backgroundColor = "green";
+
+			if (board[k][l]!=0) {
+				switch (board[k][l]) {
+					case K:
+						feedback.textContent = "Vous avez selectionné le roi !";
+						break;
+					case Q:
+						feedback.textContent = "Vous avez selectionné la reine !";
+						break;
+					case B:
+						feedback.textContent = "Vous avez selectionné le fou !";
+						break;
+					case N:
+						feedback.textContent = "Vous avez selectionné le cheval !";
+						break;
+					case R:
+						feedback.textContent = "Vous avez selectionné la tour !";
+						break;
+					case P:
+						feedback.textContent = "Vous avez selectionné le pion !";
+						break;
+				}
+			} else feedback.textContent = "";
+
 		}
 		else{
 			let x=current[0];
@@ -245,8 +270,9 @@ function selectCell(k,l){
 			current=undefined;
 			cell=table[x][y];
 			if ((x+y)%2==1) cell.style.backgroundColor="rgb(255,200,160)";
-			else cell.style.backgroundColor="white";
-			
+			else cell.style.backgroundColor = "white";
+			if (in_check && board[x][y] == joueur && !coup_ok([x, y], [k, l])) cell.style.backgroundColor = "red";
+			feedback.textContent = "";
 			
 			
 			if (coup_ok([x,y],[k,l])){
@@ -305,7 +331,16 @@ function update(){
 			let cell=table[k][l];
 			if (piece!=0){
 				image='url("images/'+piece+'.png")';
-				cell.style.backgroundImage=image;
+				cell.style.backgroundImage = image;
+				if (piece == joueur) {
+					check = is_check(joueur);
+					if (check) { cell.style.backgroundColor = "red"; in_check = true;}
+					else {
+						in_check = false;
+						if ((k + l) % 2 == 1) cell.style.backgroundColor = "rgb(255,200,160)";
+						else cell.style.backgroundColor = "white";
+					}
+				}
 			}
 			else{
 				cell.style.backgroundImage="none";
@@ -447,7 +482,9 @@ function is_check(camp){ //verifie si il y a un echec menacant camp (camp = 1 po
 			
 				for (let x1=0;x1<8;x1++){
 					for (let y1=0;y1<8;y1++) {
-						if (deplacement_ok(-camp,[x1,y1],[x2,y2])) return true;				
+						if (deplacement_ok(-camp, [x1, y1], [x2, y2])) {
+							return true;
+						}			
 					}
 				}
 			
@@ -479,7 +516,10 @@ function coup_ok(start,end){ //verifie que ce coup est ok pour "joueur"
 		board[x1][y1]=piece1;
 		board[x2][y2]=piece2;
 		
-		if (!check) return true;
+		if (!check) {
+			feedback.textContent = "Bien joué !";
+			return true;
+		}
 			
 		}
 
@@ -522,8 +562,9 @@ function coup_ok(start,end){ //verifie que ce coup est ok pour "joueur"
 		
 		}
 	}
-		
-	return false;	
+
+	feedback.textContent = "Mouvement n'est pas possible";
+	return false;
 }
 
 function choosePromotion(piece){
