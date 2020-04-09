@@ -1,4 +1,4 @@
-var board=[];
+var board = [];
 
 
 socket.on('init',function(couleur,turn,data){
@@ -19,7 +19,7 @@ socket.on('init',function(couleur,turn,data){
 	}
 	fini=false;
 	pause=true;
-	info_tour.textContent="En pause tant qu'il n'y a pas deux joueur connectés à la partie...";
+	info_tour.textContent="En pause tant qu'il n'y a pas deux joueurs connectés à la partie...";
 	
 	chatContent.innerHTML="";
 	
@@ -32,7 +32,7 @@ socket.on('pause',function(bool){
 	if (!fini){
 		
 		if (pause){
-			info_tour.textContent="En pause tant qu'il n'y a pas deux joueur connectés à la partie...";
+			info_tour.textContent="En pause tant qu'il n'y a pas deux joueurs connectés à la partie...";
 		}
 		else{
 			if (your_turn){
@@ -45,13 +45,21 @@ socket.on('pause',function(bool){
 	}
 });
 
-socket.on('update',function(data){
+socket.on('update', function (data, piece) {
 	if(joueur==1){
-		board=JSON.parse(data);
+		board = JSON.parse(data);
 	}
 	else{
-		board=convert(JSON.parse(data));
+		board = convert(JSON.parse(data));
 	}
+
+	if (piece != 0) {
+		capturePiece(piece);
+		capturei = 0;
+	} else {
+		capturei = 0;
+	}
+
 	update();
 	
 	if (reste_coup_possible()){
@@ -174,7 +182,10 @@ for (let l=2;l<6;l++){
 	promotion.appendChild(img);
 	//promotion.appendChild(br);
 }
-promotion.style.display="none";
+promotion.style.display = "none";
+
+//zone de capture (au depart invisible)
+capture.style.display = "none";
 
 var promotionSquare; //used when a promotion is being choosed
 
@@ -185,6 +196,7 @@ var your_turn=false;
 var pause=true;
 var fini = false;
 var in_check = false;
+var capturei = 0;
 
 var roqueGauchePossible=true;
 var roqueDroitPossible=true;
@@ -243,21 +255,27 @@ function selectCell(k,l){
 			if (board[k][l]!=0) {
 				switch (board[k][l]) {
 					case K:
+					case -K:
 						feedback.textContent = "Vous avez selectionné le roi !";
 						break;
 					case Q:
+					case -Q:
 						feedback.textContent = "Vous avez selectionné la reine !";
 						break;
 					case B:
+					case -B:
 						feedback.textContent = "Vous avez selectionné le fou !";
 						break;
 					case N:
+					case -N:
 						feedback.textContent = "Vous avez selectionné le cheval !";
 						break;
 					case R:
+					case -R:
 						feedback.textContent = "Vous avez selectionné la tour !";
 						break;
 					case P:
+					case -P:
 						feedback.textContent = "Vous avez selectionné le pion !";
 						break;
 				}
@@ -275,7 +293,12 @@ function selectCell(k,l){
 			feedback.textContent = "";
 			
 			
-			if (coup_ok([x,y],[k,l])){
+			if (coup_ok([x, y], [k, l])) {
+
+				//prise en compte de la capture
+				if (board[k][l] != 0) {
+					capturePiece(board[k][l]);
+				}
 				
 				//déplacement de la piece ayant bougé
 				board[k][l]=board[x][y];
@@ -283,12 +306,14 @@ function selectCell(k,l){
 				
 				if (Math.abs(board[k][l])==K && l==y-2){//si roque gauche on doit aussi déplacer la tour gauche
 					board[k][y-1]=board[k][0];
-					board[k][0]=0;
+					board[k][0] = 0;
+					feedback.textContent = "Roque à gauche !";
 				}
 				
 				if (Math.abs(board[k][l])==K && l==y+2){//si roque droit on doit aussi déplacer la tour droite
 					board[k][y+1]=board[k][7];
-					board[k][7]=0;
+					board[k][7] = 0;
+					feedback.textContent = "Roque à droite !";
 				}
 				
 				update();
@@ -579,20 +604,37 @@ function choosePromotion(piece){
 	endTurn();
 }
 
+function capturePiece(piece) {
+	if (capture.style.display == "none") {
+		capture.style.display = "block";
+	}
+
+	let cell = document.createElement("td");
+
+	img = document.createElement("img");
+	img.src = "images/" + piece + ".png";
+	img.style.width = "3vw";
+	img.style.height = "3vw";
+
+	capturei = piece;
+	capture.appendChild(img);
+}
+
 function endTurn(){
 	let data;
+
 	if(joueur==1){
-		data=JSON.stringify(board);
+		data = JSON.stringify(board);
 	}
 	else{
-		data=JSON.stringify(convert(board));
+		data = JSON.stringify(convert(board));
 	}
 
 	if(joueur==1){
-		socket.emit('update',data);
+		socket.emit('update', data, capturei);
 	}
 	else{
-		socket.emit('update',data);
+		socket.emit('update',data, capturei);
 	}
 					
 	your_turn=false;

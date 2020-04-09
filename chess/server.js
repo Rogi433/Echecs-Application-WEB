@@ -87,16 +87,17 @@ io.on('connection', function(socket){
 		
 	});
 	
-	socket.on('update',function(data){
-		board=JSON.parse(data);
+	socket.on('update',function(data, piece){
+		board = JSON.parse(data);
+
 		parties[socket.id].plateau=board;
 		parties[socket.id].tour = -parties[socket.id].tour;
 		
 		if (socket.joueur==1){
-			parties[socket.id].socketNoir.emit('update',data);
+			parties[socket.id].socketNoir.emit('update',data,piece);
 		}
 		else{
-			parties[socket.id].socketBlanc.emit('update',data);
+			parties[socket.id].socketBlanc.emit('update',data,piece);
 		}
 	});
 	
